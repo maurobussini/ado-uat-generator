@@ -19,12 +19,12 @@ Given the sample project on Azure DevOps services `https://dev.azure.com/foo/bar
 ```json
 [
     {
-        "workItem": 1234,
+        "workItemId": 1234,
         "executionDate": "2024-12-06T13:22:00Z",
         "isSuccess": true
     },
     {
-        "workItem": 5678,
+        "workItemId": 5678,
         "executionDate": "2024-12-05T09:33:12Z",
         "isSuccess": false
     }
