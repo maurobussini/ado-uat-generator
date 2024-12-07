@@ -44,7 +44,7 @@ func RenderWorkItemTitle(workItem sdks.WorkItemDetailsResponse) {
 	fmt.Println()
 }
 
-func RenderUserAcceptanceTestAlreadyAvailable(uatWorkItem sdks.WorkItemDetailsResponse) {
+func RenderExistingUserAcceptanceTest(uatWorkItem sdks.WorkItemDetailsResponse) {
 
 	fmt.Println("> UAT Already existing")
 	fmt.Printf("  Id    : %v", uatWorkItem.Id)
@@ -53,7 +53,7 @@ func RenderUserAcceptanceTestAlreadyAvailable(uatWorkItem sdks.WorkItemDetailsRe
 	fmt.Println()
 }
 
-func RenderUserAcceptanceTestUpdated(uatWorkItem sdks.WorkItemDetailsResponse) {
+func RenderUpdatedUserAcceptanceTest(uatWorkItem sdks.WorkItemDetailsResponse) {
 
 	fmt.Println("> UAT Existing Updated")
 	fmt.Printf("  Id    : %v", uatWorkItem.Id)
@@ -62,7 +62,7 @@ func RenderUserAcceptanceTestUpdated(uatWorkItem sdks.WorkItemDetailsResponse) {
 	fmt.Println()
 }
 
-func RenderUserAcceptanceTestCreated(uatWorkItem sdks.WorkItemDetailsResponse) {
+func RenderCreatedUserAcceptanceTest(uatWorkItem sdks.WorkItemDetailsResponse) {
 
 	fmt.Println("> UAT Created")
 	fmt.Printf("  Id    : %v", uatWorkItem.Id)

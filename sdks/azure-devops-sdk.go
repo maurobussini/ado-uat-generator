@@ -8,8 +8,6 @@ import (
 	"zenprogramming.it/ado-uat-generator/utils"
 )
 
-//const WORKITEM_TYPE_USER_ACCEPTANCE_TESTS = "User Acceptance Tests"
-
 type AzureDevOpsServiceConfiguration struct {
 	TenantName  string
 	ProjectName string

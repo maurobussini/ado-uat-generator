@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 
 	"zenprogramming.it/ado-uat-generator/flows"
 	"zenprogramming.it/ado-uat-generator/sdks"
@@ -34,8 +35,16 @@ func main() {
 		panic(err)
 	}
 
+	// Notify to UI number of workitems that will be processed
+	workItemsCount := len(resultsData)
+	fmt.Printf("Found %v workitems as reference for attach UAT", workItemsCount)
+	fmt.Println()
+	if workItemsCount == 0 {
+		return
+	}
+
 	// Iterate all test results on source JSON
-	for i := 0; i < len(resultsData); i++ {
+	for i := 0; i < workItemsCount; i++ {
 
 		userStory, err := flows.GetUserStory(settings, resultsData[i].WorkItemId)
 		if err != nil {
@@ -53,7 +62,7 @@ func main() {
 		if existingUat.Id != 0 {
 
 			// Render existing UAT
-			flows.RenderUserAcceptanceTestAlreadyAvailable(existingUat)
+			flows.RenderExistingUserAcceptanceTest(existingUat)
 
 			// Update existing UAT with execution
 			updatedUat, err := flows.UpdateExistingUserAcceptanceTests(
@@ -66,7 +75,7 @@ func main() {
 				panic(err)
 			}
 
-			flows.RenderUserAcceptanceTestUpdated(updatedUat)
+			flows.RenderUpdatedUserAcceptanceTest(updatedUat)
 
 			continue
 		}
@@ -81,6 +90,6 @@ func main() {
 			panic(err)
 		}
 
-		flows.RenderUserAcceptanceTestCreated(newUat)
+		flows.RenderCreatedUserAcceptanceTest(newUat)
 	}
 }
