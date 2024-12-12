@@ -10,10 +10,20 @@ import (
 	"zenprogramming.it/ado-uat-generator/sdks"
 )
 
+const ADO_UAT_GENERATOR_VERSION = "1.0.0"
+const WORKITEM_TYPE_USER_STORY_TYPE = "User Story"
+const WORKITEM_TYPE_USER_ACCEPTANCE_TESTS = "User Acceptance Tests"
+const UAT_TITLE = "[UAT] Automatic (" + ADO_UAT_GENERATOR_VERSION + ")"
+const UAT_RELATION_TYPE_FORWARD = "Microsoft.VSTS.Common.TestedBy-Forward"
+const UAT_RELATION_TYPE_REVERSE = "Microsoft.VSTS.Common.TestedBy-Reverse"
+
+// const FORCE_ITERATION_PATH = "Zero\\Dev\\Sprint 134"
+// const RELATION_TYPE = "System.LinkTypes.Related"
+//const RELATION_TYPE = "Microsoft.VSTS.Common.TestedBy-Forward"
+
 func GetUserStory(config sdks.AzureDevOpsServiceConfiguration, id int) (sdks.WorkItemDetailsResponse, error) {
 
 	var result sdks.WorkItemDetailsResponse
-	const USER_STORY_TYPE = "User Story"
 
 	// Get workitem with provided id
 	data, err := sdks.GetWorkItem(config, id)
@@ -24,11 +34,11 @@ func GetUserStory(config sdks.AzureDevOpsServiceConfiguration, id int) (sdks.Wor
 	}
 
 	// Check if workitem is "User Story"
-	if data.Fields.WorkItemType != USER_STORY_TYPE {
+	if data.Fields.WorkItemType != WORKITEM_TYPE_USER_STORY_TYPE {
 		return result, errors.New("Workitem with id '" +
 			strconv.Itoa(id) +
 			"' should be of type '" +
-			USER_STORY_TYPE +
+			WORKITEM_TYPE_USER_STORY_TYPE +
 			"', but is instead of type '" +
 			data.Fields.WorkItemType +
 			"'")
@@ -93,39 +103,35 @@ func renderSuccessString(isSuccess bool) string {
 	}
 }
 
-func CreateAttachedUserAcceptanceTests(config sdks.AzureDevOpsServiceConfiguration,
-	userStory sdks.WorkItemDetailsResponse,
-	executionDate time.Time,
-	isSuccess bool) (sdks.WorkItemDetailsResponse, error) {
+func getUatFields(title string,
+	teamProject string,
+	areaPath string,
+	iterationPath string,
+	uATResults string,
+	uATEndDate string,
+	description string,
+	userStoryUrl string) []sdks.IWorkItemFieldRequest {
 
-	const WORKITEM_TYPE_USER_ACCEPTANCE_TESTS = "User Acceptance Tests"
-	const UAT_TITLE = "Automatic UAT"
-
-	const FORCE_ITERATION_PATH = "Zero\\Dev\\Sprint 134"
-
-	var successString = renderSuccessString(isSuccess)
-	var description = appendExecutionToDescription("", executionDate, isSuccess)
-
-	var fields = []sdks.IWorkItemFieldRequest{
+	return []sdks.IWorkItemFieldRequest{
 		sdks.WorkItemAddPlainFieldRequest{
 			Op:    "add",
 			Path:  "/fields/System.Title",
-			Value: UAT_TITLE,
+			Value: title,
 		},
 		sdks.WorkItemAddPlainFieldRequest{
 			Op:    "add",
 			Path:  "/fields/System.TeamProject",
-			Value: userStory.Fields.TeamProject,
+			Value: teamProject,
 		},
 		sdks.WorkItemAddPlainFieldRequest{
 			Op:    "add",
 			Path:  "/fields/System.AreaPath",
-			Value: userStory.Fields.AreaPath,
+			Value: areaPath,
 		},
 		sdks.WorkItemAddPlainFieldRequest{
 			Op:    "add",
 			Path:  "/fields/System.IterationPath",
-			Value: FORCE_ITERATION_PATH, // TODO FOR DEVELOPMENT:  userStory.Fields.IterationPath,
+			Value: iterationPath,
 		},
 		sdks.WorkItemAddPlainFieldRequest{
 			Op:    "add",
@@ -135,12 +141,12 @@ func CreateAttachedUserAcceptanceTests(config sdks.AzureDevOpsServiceConfigurati
 		sdks.WorkItemAddPlainFieldRequest{
 			Op:    "add",
 			Path:  "/fields/Custom.UATResults",
-			Value: successString,
+			Value: uATResults,
 		},
 		sdks.WorkItemAddPlainFieldRequest{
 			Op:    "add",
 			Path:  "/fields/Custom.UATEndDate",
-			Value: executionDate.Format(time.RFC3339),
+			Value: uATEndDate,
 		},
 		sdks.WorkItemAddPlainFieldRequest{
 			Op:    "add",
@@ -151,17 +157,37 @@ func CreateAttachedUserAcceptanceTests(config sdks.AzureDevOpsServiceConfigurati
 			Op:   "add",
 			Path: "/relations/-",
 			Value: sdks.WorkItemAddRelationFieldRequest{
-				Rel: "System.LinkTypes.Related",
-				Url: userStory.Url,
+				Rel: UAT_RELATION_TYPE_FORWARD,
+				Url: userStoryUrl,
 			},
 		},
 	}
+}
+
+func CreateAttachedUserAcceptanceTests(config sdks.AzureDevOpsServiceConfiguration,
+	userStory sdks.WorkItemDetailsResponse,
+	executionDate time.Time,
+	isSuccess bool) (sdks.WorkItemDetailsResponse, error) {
+
+	var successString = renderSuccessString(isSuccess)
+	var description = appendExecutionToDescription("", executionDate, isSuccess)
+
+	var fields = getUatFields(
+		UAT_TITLE,
+		userStory.Fields.TeamProject,
+		userStory.Fields.AreaPath,
+		userStory.Fields.IterationPath,
+		successString,
+		executionDate.Format(time.RFC3339),
+		description,
+		userStory.Url)
 
 	return sdks.CreateWorkItem(config, WORKITEM_TYPE_USER_ACCEPTANCE_TESTS, &fields)
 }
 
 func UpdateExistingUserAcceptanceTests(settings sdks.AzureDevOpsServiceConfiguration,
 	existingUat sdks.WorkItemDetailsResponse,
+	userStory sdks.WorkItemDetailsResponse,
 	executionDate time.Time,
 	isSuccess bool) (sdks.WorkItemDetailsResponse, error) {
 
@@ -171,37 +197,21 @@ func UpdateExistingUserAcceptanceTests(settings sdks.AzureDevOpsServiceConfigura
 		executionDate,
 		isSuccess)
 
-	var fields = []sdks.IWorkItemFieldRequest{
-		sdks.WorkItemAddPlainFieldRequest{
-			Op:    "add",
-			Path:  "/fields/System.State",
-			Value: "Closed",
-		},
-		sdks.WorkItemAddPlainFieldRequest{
-			Op:    "add",
-			Path:  "/fields/Custom.UATResults",
-			Value: successString,
-		},
-		sdks.WorkItemAddPlainFieldRequest{
-			Op:    "add",
-			Path:  "/fields/Custom.UATEndDate",
-			Value: executionDate.Format(time.RFC3339),
-		},
-		sdks.WorkItemAddPlainFieldRequest{
-			Op:    "add",
-			Path:  "/fields/System.Description",
-			Value: description,
-		},
-	}
+	var fields = getUatFields(
+		UAT_TITLE,
+		userStory.Fields.TeamProject,
+		userStory.Fields.AreaPath,
+		userStory.Fields.IterationPath,
+		successString,
+		executionDate.Format(time.RFC3339),
+		description,
+		userStory.Url)
 
 	return sdks.UpdateWorkItem(settings, existingUat.Id, &fields)
 }
 
 func GetAttachedUserAcceptanceTests(config sdks.AzureDevOpsServiceConfiguration,
 	targetWorkItem sdks.WorkItemDetailsResponse) (sdks.WorkItemDetailsResponse, error) {
-
-	const RELATION_TYPE = "System.LinkTypes.Related"
-	const WORKITEM_TYPE_USER_ACCEPTANCE_TESTS = "User Acceptance Tests"
 
 	var defaultValue sdks.WorkItemDetailsResponse
 
@@ -210,7 +220,7 @@ func GetAttachedUserAcceptanceTests(config sdks.AzureDevOpsServiceConfiguration,
 
 		// Check if relation is of type "Related". Parent, Child, etc.
 		// should be excluded because are not of conventional type
-		if targetWorkItem.Relations[k].Rel != RELATION_TYPE {
+		if targetWorkItem.Relations[k].Rel != UAT_RELATION_TYPE_REVERSE {
 			continue
 		}
 

@@ -68,6 +68,7 @@ func main() {
 			updatedUat, err := flows.UpdateExistingUserAcceptanceTests(
 				settings,
 				existingUat,
+				userStory,
 				resultsData[i].ExecutionDate,
 				resultsData[i].IsSuccess)
 
